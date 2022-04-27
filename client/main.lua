@@ -24,56 +24,59 @@ AddEventHandler('n_flattire:makeflattire', function(time)
 
         local closestTire = GetClosestWheel(vehicle, minDistance)
 
-        if not IsVehicleTyreBurst(vehicle, closestTire.tireIndex, true) then
+        if closestTire then
 
-            RequestAnimDict(animDict)
-            while not HasAnimDictLoaded(animDict) do
-                Citizen.Wait(100)
-            end
+            if not IsVehicleTyreBurst(vehicle, closestTire.tireIndex, true) then
 
-            local animDuration = GetAnimDuration(animDict, animation)
-            TaskPlayAnim(playerPed, animDict, animation, 8.0, -8.0, animDuration, 15, 1.0, 0, 0, 0)
+                RequestAnimDict(animDict)
+                while not HasAnimDictLoaded(animDict) do
+                    Citizen.Wait(100)
+                end
 
-            while not success do
-                Citizen.Wait((animDuration / 2) * 1000)
+                local animDuration = GetAnimDuration(animDict, animation)
+                TaskPlayAnim(playerPed, animDict, animation, 8.0, -8.0, animDuration, 15, 1.0, 0, 0, 0)
 
-                if not vehicleAlarm then
-                    local alarmRandom = math.random(100)
-                    if alarmRandom < alarmChance then
+                while not success do
+
+                    if not closestTire then
+                        ESX.ShowNotification('Ställ dig närmare bilen.')
+                        break
+                    end
+
+                    if not vehicleAlarm then
+                        local alarmRandom = math.random(100)
+                        if alarmRandom < alarmChance then
+                            SetVehicleAlarm(vehicle, true)
+                            StartVehicleAlarm(vehicle)
+                            vehicleAlarm = true
+                        end
+                    end
+
+                    Citizen.Wait((animDuration / 2) * 1000)
+
+                    local successRandom = math.random(100)
+                    if successRandom < successChance then
+                            SetVehicleTyreBurst(vehicle, closestTire.tireIndex, true, 1000.0)
+                            success = true
+                            Citizen.Wait((animDuration / 2) * 1000)
+                        break
+                    end
+
+                    Citizen.Wait((animDuration / 2) * 1000)
+                end
+
+                ClearPedTasksImmediately(playerPed)
+                if success then
+                    if not vehicleAlarm then
                         SetVehicleAlarm(vehicle, true)
                         StartVehicleAlarm(vehicle)
                         vehicleAlarm = true
                     end
-                end
 
-                if not closestTire then
-                    ESX.ShowNotification('Ställ dig närmare bilen.')
-                    break
-                end
-
-                local successRandom = math.random(100)
-
-                if successRandom < successChance then
-                        SetVehicleTyreBurst(vehicle, closestTire.tireIndex, true, 1000.0)
-                        success = true
-                        Citizen.Wait((animDuration / 2) * 1000)
-                    break
-                end
-
-                Citizen.Wait((animDuration / 2) * 1000)
-            end
-
-            ClearPedTasksImmediately(playerPed)
-            if success then
-                if not vehicleAlarm then
-                    SetVehicleAlarm(vehicle, true)
-                    StartVehicleAlarm(vehicle)
-                    vehicleAlarm = true
-                end
-
-                local breakRandom = math.random(100)
-                if breakRandom < breakChance then
-                    TriggerServerEvent('n_flattire:removeitem', source)
+                    local breakRandom = math.random(100)
+                    if breakRandom < breakChance then
+                        TriggerServerEvent('n_flattire:removeitem', source)
+                    end
                 end
             end
         end
